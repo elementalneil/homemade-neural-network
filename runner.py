@@ -30,13 +30,18 @@ def main():
         X = X_train, 
         Y = transformed_y, 
         hidden_layers = [64, 32], 
-        epochs = 5000, 
+        epochs = 500, 
         learning_rate = 0.1,
         activation_function_type = ActivationFunctionValues.RELU
     )
 
-    network.train_neural_network()
-    network.save_weights('./data/saved_weights_64_32_mnist.npz')
+    network.train_neural_network(
+        on_progress = lambda progress: print(
+            f"Epoch: {progress.completed_epochs}/{progress.total_epochs} | "
+            f"Accuracy: {progress.accuracy} | Error: {progress.error}"
+        )
+    )
+    # network.save_weights('./data/saved_weights_64_32_mnist.npz')
 
     # network.load_weights('./data/saved_weights_64_32_mnist.npz')
     # validation_probabilities = network.predict(X_dev)

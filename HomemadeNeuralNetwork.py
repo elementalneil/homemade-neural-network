@@ -4,6 +4,17 @@ import numpy as np
 import pandas as pd
 
 from enum import Enum
+from collections.abc import Callable
+from dataclasses import dataclass
+
+
+# Dataclass is equivalent to a C# Record; Immutable + Automatic Constructor Creation
+@dataclass(frozen=True)
+class TrainingProgress:
+    completed_epochs: int
+    total_epochs: int
+    accuracy: float | None = None
+    error: float | None = None
 
 
 class ActivationFunctionValues(Enum):
@@ -184,24 +195,30 @@ class NeuralNetwork:
 
     # region Public Methods
 
-    def train_neural_network(self) -> tuple:
+    def train_neural_network(
+        self,
+        on_progress: Callable[[TrainingProgress], None] | None = None
+    ) -> None:
         weights, biases = self._initialize_weights()
 
-        for epoch in range(self.epochs):
+        # Epoch is 1-indexed for better readability
+        for epoch in range(1, self.epochs + 1):
             gradients, bias_gradients = self._backpropagate(weights, biases)
             weights, biases = self._update_parameters(weights, biases, gradients, bias_gradients)
 
-            prev_error = 10000000
-            if epoch % 10 == 0:
+            if epoch % 10 == 0 or epoch == self.epochs:
                 a_L, _, _ = self._forward_propagate(self.X, weights, biases)
                 predictions = self.get_predictions(a_L)
 
-                print(f"Iteration: {epoch}")
-                # Y is one-hot encoded. np.argmax() is used to get the actual Y.
-                print(predictions, np.argmax(self.Y, axis=0))
-                print(f'Accuracy: {self.get_accuracy(predictions, np.argmax(self.Y, axis=0))}')
-                error = self._calculate_error(a_L, self.Y)
-                print(f'Error   : {error}')
+                if on_progress is not None:
+                    on_progress(
+                        TrainingProgress(
+                            completed_epochs=epoch,
+                            total_epochs=self.epochs,
+                            accuracy=self.get_accuracy(predictions, np.argmax(self.Y, axis=0)),
+                            error=self._calculate_error(a_L, self.Y)
+                        )
+                    )
 
         self.parameters = {"weights": weights, "biases": biases}
 
