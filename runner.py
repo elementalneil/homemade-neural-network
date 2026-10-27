@@ -1,4 +1,4 @@
-from HomemadeNeuralNetwork import NeuralNetwork, ActivationFunctionValues
+from homemade_neural_network import NeuralNetwork, ActivationFunctionValues
 
 import numpy as np
 import pandas as pd
