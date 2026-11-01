@@ -18,7 +18,6 @@ class TrainingProgress:
 
 class ActivationFunctionValues(Enum):
     SIGMOID = "sigmoid"
-    RELU = "ReLU"
 
 
 '''
@@ -70,23 +69,11 @@ class NeuralNetwork:
     # region Pure Methods (TODO: Consider marking static)
 
     def _activation_function(self, z: np.ndarray) -> np.ndarray:
-        if self._activation_function_type == ActivationFunctionValues.SIGMOID:
-            return 1 / (1 + np.exp(-z))
-        else:
-            return np.maximum(z, 0)
+        return 1 / (1 + np.exp(-z))
 
 
     def _activation_function_prime(self, z: np.ndarray) -> np.ndarray:
-        if self._activation_function_type == ActivationFunctionValues.SIGMOID:
-            return self._activation_function(z) * (1 - self._activation_function(z))
-        else:
-            return (z > 0).astype(float)        
-
-
-    def _softmax(self, z: np.ndarray) -> np.ndarray:
-        shifted = z - np.max(z, axis=0, keepdims=True)
-        exp_z = np.exp(shifted)
-        return exp_z / np.sum(exp_z, axis=0, keepdims=True)
+        return self._activation_function(z) * (1 - self._activation_function(z))  
 
 
     def get_predictions(self, A: np.ndarray) -> np.ndarray:
@@ -99,8 +86,14 @@ class NeuralNetwork:
 
 
     # Here, Y is the one-hot encoded Y, unlike get_accuracy
-    def _calculate_error(self, A, Y_):
-        return 0.5 * np.mean(np.sum((A - Y_) ** 2, axis = 0))
+    def _calculate_error(self, A: np.ndarray, Y_: np.ndarray) -> float:
+        # if any value in A is exactly 0.0 / exactly 1.0, the log operation would throw
+        # np.clip() updates out of bound values to the specified lower / upper bound respectively.
+        A = np.clip(A, 1e-12, 1 - 1e-12)        
+        return -np.mean(np.sum(
+            Y_ * np.log(A) + (1 - Y_) * np.log(1 - A),
+            axis=0,
+        ))
 
     # endregion
 
@@ -151,8 +144,6 @@ class NeuralNetwork:
             activations.append(self._activation_function(z_layer_i))
             Z.append(z_layer_i)
 
-        # Adding a softmax layer doesn't change the results much. Need to understand more.
-        activations[L-1] = self._softmax(activations[L-1])    
         y = activations[L-1]
         return y, activations, Z
 
@@ -167,11 +158,7 @@ class NeuralNetwork:
         bias_gradients = [np.array([0]) for _ in range(L)]
 
         # Calculation for output layer, L
-        delta_a_c = activations[L-1] - self.Y        # The 1 / n normalization is applied at the next steps.
-
-        output_error = delta_a_c * self._activation_function_prime(Z[L-1])
-        if self._activation_function_type == ActivationFunctionValues.RELU:
-            output_error = delta_a_c
+        output_error = activations[L-1] - self.Y   # The 1 / n normalization is applied at the next steps.
 
         gradients[L-1] = 1 / n * (output_error @ activations[L-2].T)
         bias_gradients[L-1] = 1 / n * np.sum(output_error, axis = 1, keepdims=True)                   

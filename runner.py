@@ -30,9 +30,9 @@ def main():
         X = X_train, 
         Y = transformed_y, 
         hidden_layers = [64, 32], 
-        epochs = 500, 
-        learning_rate = 0.1,
-        activation_function_type = ActivationFunctionValues.RELU
+        epochs = 1000, 
+        learning_rate = 1,
+        activation_function_type = ActivationFunctionValues.SIGMOID
     )
 
     network.train_neural_network(
